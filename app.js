@@ -1,4 +1,9 @@
 require('dotenv').config();
+//hashing
+const md5 = require('md5');
+
+
+
 
 const express = require("express");
 const bodyParser = require("body-parser");
@@ -8,8 +13,8 @@ const app = express();
 const port = 3000;
 //adding mongoDB
 const mongoose = require("mongoose");
-//requiring encryption
-const encrypt = require('mongoose-encryption');
+//requiring encryption, not useful when we use hashing encryption
+//const encrypt = require('mongoose-encryption');
 
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static("public"));
@@ -29,7 +34,8 @@ const userSchema = new mongoose.Schema({
 
 //important to use this before the creatin of the model
 //encryptedFileds is use to encrypt just some fields, the ones we want to
-userSchema.plugin(encrypt, {secret: process.env.SECRET, encryptedField: ['password'] });
+//userSchema.plugin not useful when working whith hashing
+//userSchema.plugin(encrypt, {secret: process.env.SECRET, encryptedField: ['password'] });
 
 
 // 3) creating model
@@ -48,7 +54,7 @@ app.get("/login", function(req,res){
 
 app.post("/login", function(req,res){
   const username = req.body.username;
-  const password = req.body.password;
+  const password = md5(req.body.password);
   //checking to see if we have a user with those credentials in order to be able to login
   User.findOne({email: username}, function(err, foundUser){
     if(err){
@@ -70,7 +76,8 @@ app.post("/register", function(req, res){
 
     const newUser = new User({
       email: req.body.username,
-      password: req.body.password
+      //using md5 package in order to make this password encrypted by hashing,lecture 402
+      password: md5(req.body.password)
     })
 
   newUser.save((err) => err ?  console.log(err) : res.render("secrets") );
