@@ -1,8 +1,11 @@
 require('dotenv').config();
-//hashing
-const md5 = require('md5');
+//hashing, not useful when using bcryp for salty password
+//const md5 = require('md5');
 
+const bcrypt = require("bcrypt");
 
+//defining salt grams
+const saltGrams = 10;
 
 
 const express = require("express");
@@ -54,14 +57,27 @@ app.get("/login", function(req,res){
 
 app.post("/login", function(req,res){
   const username = req.body.username;
-  const password = md5(req.body.password);
+  const password = req.body.password;
+
   //checking to see if we have a user with those credentials in order to be able to login
   User.findOne({email: username}, function(err, foundUser){
     if(err){
       console.log(err)
     } else {
-      if(foundUser.password === password){
+      if(foundUser){
+          //callback function taken from the docs, in the docs as the second parameter we get 'hash', which in our case is foundUser.password, which is a hash, the one
+          //that the callbakc wanted to compare to in our case foundUser.password
+        bcrypt.compare(password, foundUser.password).then(function(result) {
+      // result == true
+      if(result == true){
          res.render("secrets");
+
+      }
+    });
+
+
+
+
       }
     }
   })
@@ -74,13 +90,19 @@ app.get("/register", function(req,res){
 
 app.post("/register", function(req, res){
 
-    const newUser = new User({
-      email: req.body.username,
-      //using md5 package in order to make this password encrypted by hashing,lecture 402
-      password: md5(req.body.password)
-    })
+  bcrypt.hash(req.body.password, saltGrams, function(err, hash) {
+    // Store hash in your password DB.
+      const newUser = new User({
+        email: req.body.username,
+        //using md5 package in order to make this password encrypted by hashing,lecture 402
+        //now usingthe hash that comes from the callback function we have implemented throught the docs,lesson 404
+        password: hash
+      })
 
-  newUser.save((err) => err ?  console.log(err) : res.render("secrets") );
+    newUser.save((err) => err ?  console.log(err) : res.render("secrets") );
+
+  });
+
 });
 
 
