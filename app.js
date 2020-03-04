@@ -1,11 +1,17 @@
 require('dotenv').config();
 //hashing, not useful when using bcryp for salty password
 //const md5 = require('md5');
-
-const bcrypt = require("bcrypt");
+//changed for passport level 5 security
+//const bcrypt = require("bcrypt");
 
 //defining salt grams
-const saltGrams = 10;
+//level 5 passport and cookies
+//onst saltGrams = 10;
+
+//in order to use passport adn cookies
+const session = require('express-session');
+const passport = require("passport");
+const passportLocalMongoose = require("passport-local-mongoose");
 
 
 const express = require("express");
@@ -25,6 +31,13 @@ app.set('view engine', 'ejs');
 
 //1) connecting
 //this is the default port "mongodb://localhost:27017/ + name of the db"
+//using passport level 5 security
+app.use(session({
+  secret: "my secret.",
+  resave: false,
+  saveUninitialized: false
+}))
+
 mongoose.connect("mongodb://localhost:27017/userDB",{useNewUrlParser: true, useUnifiedTopology: true });
 
 // 2) creatin schema
@@ -56,31 +69,7 @@ app.get("/login", function(req,res){
 });
 
 app.post("/login", function(req,res){
-  const username = req.body.username;
-  const password = req.body.password;
-
-  //checking to see if we have a user with those credentials in order to be able to login
-  User.findOne({email: username}, function(err, foundUser){
-    if(err){
-      console.log(err)
-    } else {
-      if(foundUser){
-          //callback function taken from the docs, in the docs as the second parameter we get 'hash', which in our case is foundUser.password, which is a hash, the one
-          //that the callbakc wanted to compare to in our case foundUser.password
-        bcrypt.compare(password, foundUser.password).then(function(result) {
-      // result == true
-      if(result == true){
-         res.render("secrets");
-
-      }
-    });
-
-
-
-
-      }
-    }
-  })
+//we are gonna include passport and cookies
 
 });
 
@@ -89,19 +78,8 @@ app.get("/register", function(req,res){
 });
 
 app.post("/register", function(req, res){
+//we are gonna include passport and cookies
 
-  bcrypt.hash(req.body.password, saltGrams, function(err, hash) {
-    // Store hash in your password DB.
-      const newUser = new User({
-        email: req.body.username,
-        //using md5 package in order to make this password encrypted by hashing,lecture 402
-        //now usingthe hash that comes from the callback function we have implemented throught the docs,lesson 404
-        password: hash
-      })
-
-    newUser.save((err) => err ?  console.log(err) : res.render("secrets") );
-
-  });
 
 });
 
