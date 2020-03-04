@@ -1,3 +1,5 @@
+require('dotenv').config();
+
 const express = require("express");
 const bodyParser = require("body-parser");
 const ejs = require("ejs");
@@ -24,10 +26,10 @@ const userSchema = new mongoose.Schema({
 });
 
 //using encrytion
-const secret = "this is the secret";
+
 //important to use this before the creatin of the model
 //encryptedFileds is use to encrypt just some fields, the ones we want to
-userSchema.plugin(encrypt, {secret: secret, encryptedField: ['password'] });
+userSchema.plugin(encrypt, {secret: process.env.SECRET, encryptedField: ['password'] });
 
 
 // 3) creating model
