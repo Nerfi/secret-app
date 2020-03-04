@@ -36,15 +36,23 @@ app.use(session({
   secret: "my secret.",
   resave: false,
   saveUninitialized: false
-}))
+}));
+
+//intializing passport
+app.use(passport.initialize());
+app.use(passport.session());
 
 mongoose.connect("mongodb://localhost:27017/userDB",{useNewUrlParser: true, useUnifiedTopology: true });
-
+//in order to stop the error warning
+mongoose.set('useCreateIndex', true);
 // 2) creatin schema
 const userSchema = new mongoose.Schema({
   email: String,
   password: String
 });
+
+//initializing passpor local mongooose
+userSchema.plugin(passportLocalMongoose);
 
 //using encrytion
 
@@ -57,6 +65,11 @@ const userSchema = new mongoose.Schema({
 // 3) creating model
 const User = new mongoose.model("User", userSchema);
 
+//configuiring passport local
+passport.use(User.createStrategy());
+
+passport.serializeUser(User.serializeUser());
+passport.deserializeUser(User.deserializeUser());
 
 
 
@@ -70,6 +83,21 @@ app.get("/login", function(req,res){
 
 app.post("/login", function(req,res){
 //we are gonna include passport and cookies
+  const  user = new User({
+    username: req.body.username,
+    password: req.body.password
+  });
+  //login method comes from passport, read docs for more info
+  req.login(user, function(err){
+    if(err){
+      console.log(err);
+    } else {
+      passport.authenticate("local")(req,res, function(){
+      res.redirect("/secrets");
+    })
+    }
+
+  });
 
 });
 
@@ -77,9 +105,35 @@ app.get("/register", function(req,res){
   res.render("register");
 });
 
+
+app.get("/secrets", function(req,res){
+  if(req.isAuthenticated()){
+    res.render("secrets");
+  } else {
+    res.redirect("/login");
+  }
+
+
+});
+
+
 app.post("/register", function(req, res){
 //we are gonna include passport and cookies
+const username = req.body.username;
+const password = req.body.password;
 
+  User.register({username: username}, password,function(err,user){
+  if(err) {
+    console.log(err);
+    res.redirect("/register");
+
+  } else {
+    passport.authenticate("local")(req,res, function(){
+      res.redirect("/secrets");
+    })
+  }
+
+  });
 
 });
 
@@ -88,6 +142,12 @@ app.get("/submit", function(req,res){
   res.render("submit");
 });
 
+
+app.get("/logout", function(req,res){
+  ///deaunthenticate the user once he logsout
+  req.logout(); // from the docs
+  res.redirect("/");
+});
 
 
 
