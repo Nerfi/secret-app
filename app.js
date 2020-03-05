@@ -18,10 +18,16 @@ const express = require("express");
 const bodyParser = require("body-parser");
 const ejs = require("ejs");
 
+//requiring google auth passport strategy
+const GoogleStrategy = require('passport-google-oauth20').Strategy;
+
 const app = express();
 const port = 3000;
 //adding mongoDB
 const mongoose = require("mongoose");
+//findOrCreate in order to use google passport, this method does not exist in the mongoose Db that's why we use this plugin
+const findOrCreate = require('mongoose-findorcreate');
+
 //requiring encryption, not useful when we use hashing encryption
 //const encrypt = require('mongoose-encryption');
 
@@ -48,11 +54,14 @@ mongoose.set('useCreateIndex', true);
 // 2) creatin schema
 const userSchema = new mongoose.Schema({
   email: String,
-  password: String
+  password: String,
+  //we added this in order to store the googleId of the logged user, this line is related with line 104
+  googleId: String
 });
 
 //initializing passpor local mongooose
 userSchema.plugin(passportLocalMongoose);
+userSchema.plugin(findOrCreate);
 
 //using encrytion
 
@@ -68,14 +77,56 @@ const User = new mongoose.model("User", userSchema);
 //configuiring passport local
 passport.use(User.createStrategy());
 
-passport.serializeUser(User.serializeUser());
-passport.deserializeUser(User.deserializeUser());
+//passport.serializeUser(User.serializeUser());
+
+passport.serializeUser(function(user, done) {
+  done(null, user.id);
+});
+
+
+//passport.deserializeUser(User.deserializeUser());
+
+passport.deserializeUser(function(id, done) {
+  User.findById(id, function(err, user) {
+    done(err, user);
+  });
+});
+
+//using google passport
+passport.use(new GoogleStrategy({
+    clientID: process.env.CLIENT_ID,
+    clientSecret: process.env.CLIENT_SECRET,
+    callbackURL: "http://localhost:3000/auth/google/secrets"
+  },
+  function(accessToken, refreshToken, profile, cb) {
+    console.log(profile);
+
+    User.findOrCreate({ googleId: profile.id }, function (err, user) {
+      return cb(err, user);
+    });
+  }
+));
 
 
 
 app.get("/", function(req,res){
   res.render("home");
 });
+
+
+app.get('/auth/google',
+    //use passport to authenticate the user with google strategy, which we have setted up above line82, reading the docs we obtaing this
+  passport.authenticate('google', { scope: ['profile'] }
+));
+
+
+app.get('/auth/google/secrets',
+  passport.authenticate('google', { failureRedirect: '/login' }),
+  function(req, res) {
+    // Successful authentication, redirect home.
+    res.redirect('/secrets');
+  });
+
 
 app.get("/login", function(req,res){
   res.render("login");
