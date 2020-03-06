@@ -58,7 +58,7 @@ const userSchema = new mongoose.Schema({
   //we added this in order to store the googleId of the logged user, this line is related with line 104
   googleId: String,
   //we're saying that each user can have any secrets, secrets is an array
-  secret: [{type: mongoose.Schema.Types.ObjectId, ref: 'Post' }]
+  secrets: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Post' }]
 });
 
 //creating posts schema
@@ -66,6 +66,8 @@ const postSchema = new mongoose.Schema({
   user: {type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   content: String
 });
+
+
 
 //creating post model
 
@@ -94,32 +96,32 @@ passport.use(User.createStrategy());
 passport.serializeUser(function(user, done) {
   done(null, user.id);
 });
+//for testing if the relationship DB works
 
 
-//ccreating fake user and post for testing only
+//just for testing
+//const usuario = new User({
+  //email: "juan@juan.com",
+  //password: "123456",
+  //googleId: "asdsdf5424sd2f41sf24sd2f"
 
-const usuario = new User({
-  email: "juan@juan.com",
-  password: "some password"
-});
+//});
 
-usuario.save(function(err) {
-  if(err){
-    console.log(err);
-  }
-});
+//usuario.save(function(err) {
+  //if(err){
+    //console.log(err);
+  //}
+//});
 
 //creting secrets for testing porpuses
-const secreto2 = new Post({
-  content: "vamos a ver si funciona",
-  user: usuario.id
-});
+//const secreto2 = new Post({
+  //content: "vamos a ver si funcionaaaaaa",
+  //user: usuario._id
+//});
 
-secreto2.save(function(err){
-  if(err){console.log(err)}
-});
-
-
+//secreto2.save(function(err){
+  //if(err){console.log(err)}
+//});
 
 
 //passport.deserializeUser(User.deserializeUser());
@@ -197,7 +199,7 @@ app.get("/register", function(req,res){
 app.get("/secrets", function(req,res){
   //we gonna allow all the users to see the secrets publish, "$ne" means not equal
 
-  User.find({"secret": {$ne: null}}).populate("secret").exec(function(err, foundUser){
+  User.find("secrets",{$ne: null}).populate("secrets").exec(function(err, foundUser){
     if(err){
       console.log(err);
     } else {
@@ -242,45 +244,22 @@ app.get("/submit", function(req,res){
 
 
 //letting the user publish a secret
-app.post("/submit", function(req, res){
+app.post("/submit",  function(req, res){
   //taking what the user typed in
   const submitedSecret = req.body.secret;
   //let secrets = [];
-
-  //finding the current user who is submiting a secret
-  //User.findById(req.user.id, function(err, foundUser){
-
-    //if(err){
-      //console.log(err);
-
-    //} else {
-      //if(foundUser){
-        // in the case there is no error we will be able to "touch" our schema throught foundUser parameter, that's why we can write foundUser.secret
-        //foundUser.secret = submitedSecret;
-        //secrets.push(submitedSecret);
-        //foundUser.save();
-        //res.redirect("/secrets");
-     // }
-    //}
-  //});
-
-
-
-User.findOne({_id:req.user._id})
-  .then( founduser =>{
-      if(founduser){
-          // in the case there is no error we will be able to "touch" our schema throught foundUser parameter, that's why we can write foundUser.secret
+    User.findById(req.user.id, function(err, foundUser){
+      if(err) {
+        console.log(err);
+      } else {
+         //in the case there is no error we will be able to "touch" our schema throught foundUser parameter, that's why we can write foundUser.secret
         foundUser.secret = submitedSecret;
         //secrets.push(submitedSecret);
         foundUser.save();
         res.redirect("/secrets");
-}
-})
-.catch(err =>{ console.log(err
-)});
 
-
-
+      }
+    });
 
 
 });
