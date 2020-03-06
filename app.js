@@ -32,7 +32,7 @@ const findOrCreate = require('mongoose-findorcreate');
 //const encrypt = require('mongoose-encryption');
 
 app.use(bodyParser.urlencoded({ extended: true }));
-app.use(express.static("public"));
+app.use(express.static(__dirname + "/public"));
 app.set('view engine', 'ejs');
 
 //1) connecting
@@ -56,7 +56,8 @@ const userSchema = new mongoose.Schema({
   email: String,
   password: String,
   //we added this in order to store the googleId of the logged user, this line is related with line 104
-  googleId: String
+  googleId: String,
+  secret: String
 });
 
 //initializing passpor local mongooose
@@ -99,7 +100,6 @@ passport.use(new GoogleStrategy({
     callbackURL: "http://localhost:3000/auth/google/secrets"
   },
   function(accessToken, refreshToken, profile, cb) {
-    console.log(profile);
 
     User.findOrCreate({ googleId: profile.id }, function (err, user) {
       return cb(err, user);
@@ -158,11 +158,14 @@ app.get("/register", function(req,res){
 
 
 app.get("/secrets", function(req,res){
-  if(req.isAuthenticated()){
-    res.render("secrets");
-  } else {
-    res.redirect("/login");
-  }
+  //we gonna allow all the users to see the secrets publish, "$ne" means not equal
+  User.find({"secret": {$ne: null}}, function(err, foundUser){
+    if(err) {
+      console.log(err);
+    } else {
+      res.render("secrets", {usersWithSecrets: foundUser});
+    }
+  });
 
 
 });
@@ -190,9 +193,41 @@ const password = req.body.password;
 
 
 app.get("/submit", function(req,res){
-  res.render("submit");
+
+  if(req.isAuthenticated()){
+    res.render("submit");
+  } else {
+    res.redirect("/login");
+  }
+
 });
 
+
+//letting the user publish a secret
+app.post("/submit", function(req, res){
+  //taking what the user typed in
+  const submitedSecret = req.body.secret;
+  console.log(submitedSecret);
+  //let secrets = [];
+
+  //finding the current user who is submiting a secret
+  User.findById(req.user.id, function(err, foundUser){
+    if(err){
+      console.log(err);
+    } else {
+      if(foundUser){
+        // in the case there is no error we will be able to "touch" our schema throught foundUser parameter, that's why we can write foundUser.secret
+        foundUser.secret = submitedSecret;
+        //secrets.push(submitedSecret);
+        foundUser.save();
+        res.redirect("/secrets");
+      }
+    }
+  });
+
+
+
+});
 
 app.get("/logout", function(req,res){
   ///deaunthenticate the user once he logsout
