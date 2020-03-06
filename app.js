@@ -248,19 +248,38 @@ app.post("/submit", function(req, res){
   //let secrets = [];
 
   //finding the current user who is submiting a secret
-  User.findById(req.user.id, function(err, foundUser){
-    if(err){
-      console.log(err);
-    } else {
-      if(foundUser){
+  //User.findById(req.user.id, function(err, foundUser){
+
+    //if(err){
+      //console.log(err);
+
+    //} else {
+      //if(foundUser){
         // in the case there is no error we will be able to "touch" our schema throught foundUser parameter, that's why we can write foundUser.secret
+        //foundUser.secret = submitedSecret;
+        //secrets.push(submitedSecret);
+        //foundUser.save();
+        //res.redirect("/secrets");
+     // }
+    //}
+  //});
+
+
+
+User.findOne({_id:req.user._id})
+  .then( founduser =>{
+      if(founduser){
+          // in the case there is no error we will be able to "touch" our schema throught foundUser parameter, that's why we can write foundUser.secret
         foundUser.secret = submitedSecret;
         //secrets.push(submitedSecret);
         foundUser.save();
         res.redirect("/secrets");
-      }
-    }
-  });
+}
+})
+.catch(err =>{ console.log(err
+)});
+
+
 
 
 
