@@ -57,7 +57,7 @@ const userSchema = new mongoose.Schema({
   password: String,
   //we added this in order to store the googleId of the logged user, this line is related with line 104
   googleId: String,
-  //we're saying that each user can have any secrets, secrets is an array
+  //we're saying that each user can have many secrets, secrets is an array
   secrets: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Post' }]
 });
 
@@ -97,32 +97,6 @@ passport.serializeUser(function(user, done) {
   done(null, user.id);
 });
 //for testing if the relationship DB works
-
-
-//just for testing
-//const usuario = new User({
-  //email: "juan@juan.com",
-  //password: "123456",
-  //googleId: "asdsdf5424sd2f41sf24sd2f"
-
-//});
-
-//usuario.save(function(err) {
-  //if(err){
-    //console.log(err);
-  //}
-//});
-
-//creting secrets for testing porpuses
-//const secreto2 = new Post({
-  //content: "vamos a ver si funcionaaaaaa",
-  //user: usuario._id
-//});
-
-//secreto2.save(function(err){
-  //if(err){console.log(err)}
-//});
-
 
 //passport.deserializeUser(User.deserializeUser());
 
@@ -199,7 +173,7 @@ app.get("/register", function(req,res){
 app.get("/secrets", function(req,res){
   //we gonna allow all the users to see the secrets publish, "$ne" means not equal
 
-  User.find("secrets",{$ne: null}).populate("secrets").exec(function(err, foundUser){
+  User.find({}).populate("secrets").exec(function(err, foundUser){
     if(err){
       console.log(err);
     } else {
@@ -247,20 +221,21 @@ app.get("/submit", function(req,res){
 app.post("/submit",  function(req, res){
   //taking what the user typed in
   const submitedSecret = req.body.secret;
+  console.log(submitedSecret)
   //let secrets = [];
-    User.findById(req.user.id, function(err, foundUser){
+
+    User.findById(req.user._id, function(err, foundUser){
       if(err) {
         console.log(err);
       } else {
          //in the case there is no error we will be able to "touch" our schema throught foundUser parameter, that's why we can write foundUser.secret
-        foundUser.secret = submitedSecret;
+        foundUser.secrets = submitedSecret;
         //secrets.push(submitedSecret);
         foundUser.save();
         res.redirect("/secrets");
 
       }
     });
-
 
 });
 
