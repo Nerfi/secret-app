@@ -173,7 +173,7 @@ app.get("/register", function(req,res){
 app.get("/secrets", function(req,res){
   //we gonna allow all the users to see the secrets publish, "$ne" means not equal
 
-  User.find({}).populate("secrets").exec(function(err, foundUser){
+  User.find({"secrets": {$ne: null}}).populate("secrets").exec(function(err, foundUser){
     if(err){
       console.log(err);
     } else {
@@ -221,17 +221,19 @@ app.get("/submit", function(req,res){
 app.post("/submit",  function(req, res){
   //taking what the user typed in
   const submitedSecret = req.body.secret;
-  console.log(submitedSecret)
   //let secrets = [];
 
-    User.findById(req.user._id, function(err, foundUser){
+    User.findById(req.user.id, async function(err, foundUser){
       if(err) {
         console.log(err);
       } else {
+        console.log(typeof(foundUser.secrets));
+        console.log(foundUser);
+         //const found = foundUser.secrets;
+        //JSON.stringify(found);
          //in the case there is no error we will be able to "touch" our schema throught foundUser parameter, that's why we can write foundUser.secret
         foundUser.secrets = submitedSecret;
-        //secrets.push(submitedSecret);
-        foundUser.save();
+        await foundUser.save().catch(err => console.log(err));
         res.redirect("/secrets");
 
       }
